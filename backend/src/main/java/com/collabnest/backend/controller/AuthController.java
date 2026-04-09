@@ -1,9 +1,9 @@
-package com.collabflow.backend.controller;
+package com.collabnest.backend.controller;
 
-import com.collabflow.backend.dto.AuthResponse;
-import com.collabflow.backend.dto.LoginRequest;
-import com.collabflow.backend.dto.RegisterRequest;
-import com.collabflow.backend.service.AuthService;
+import com.collabnest.backend.dto.AuthResponse;
+import com.collabnest.backend.dto.LoginRequest;
+import com.collabnest.backend.dto.RegisterRequest;
+import com.collabnest.backend.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

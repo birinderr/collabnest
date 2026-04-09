@@ -1,6 +1,6 @@
-package com.collabflow.backend.repository;
+package com.collabnest.backend.repository;
 
-import com.collabflow.backend.entity.User;
+import com.collabnest.backend.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

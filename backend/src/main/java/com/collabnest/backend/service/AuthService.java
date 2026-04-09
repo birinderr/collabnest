@@ -1,12 +1,13 @@
-package com.collabflow.backend.service;
+package com.collabnest.backend.service;
 
-import com.collabflow.backend.dto.AuthResponse;
-import com.collabflow.backend.dto.LoginRequest;
-import com.collabflow.backend.dto.RegisterRequest;
-import com.collabflow.backend.entity.User;
-import com.collabflow.backend.exception.AppException;
-import com.collabflow.backend.repository.UserRepository;
-import com.collabflow.backend.security.JwtUtil;
+import com.collabnest.backend.dto.AuthResponse;
+import com.collabnest.backend.dto.LoginRequest;
+import com.collabnest.backend.dto.RegisterRequest;
+import com.collabnest.backend.entity.User;
+import com.collabnest.backend.enums.Role;
+import com.collabnest.backend.exception.AppException;
+import com.collabnest.backend.repository.UserRepository;
+import com.collabnest.backend.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
@@ -32,7 +33,7 @@ public class AuthService {
                 .name(request.getName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(User.Role.USER)
+                .role(Role.CREATOR)
                 .build();
 
         // Save to database
@@ -47,7 +48,7 @@ public class AuthService {
     public AuthResponse login(LoginRequest request) {
         // Find user by email
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+                .orElseThrow(() -> new AppException("Invalid email or password", HttpStatus.UNAUTHORIZED));
 
         // Check password
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {

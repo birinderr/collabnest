@@ -1,4 +1,4 @@
-package com.collabflow.backend.dto;
+package com.collabnest.backend.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

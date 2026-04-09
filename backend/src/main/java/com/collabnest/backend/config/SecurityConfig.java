@@ -1,7 +1,7 @@
-package com.collabflow.backend.config;
+package com.collabnest.backend.config;
 
-import com.collabflow.backend.repository.UserRepository;
-import com.collabflow.backend.security.JwtFilter;
+import com.collabnest.backend.repository.UserRepository;
+import com.collabnest.backend.security.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

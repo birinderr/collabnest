@@ -1,4 +1,4 @@
-package com.collabflow.backend.security;
+package com.collabnest.backend.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

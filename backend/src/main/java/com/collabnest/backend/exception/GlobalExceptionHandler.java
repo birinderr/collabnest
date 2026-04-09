@@ -1,6 +1,6 @@
-package com.collabflow.backend.exception;
+package com.collabnest.backend.exception;
 
-import com.collabflow.backend.dto.ErrorResponse;
+import com.collabnest.backend.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;

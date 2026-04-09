@@ -1,4 +1,4 @@
-package com.collabflow.backend.exception;
+package com.collabnest.backend.exception;
 
 import org.springframework.http.HttpStatus;
 import lombok.Getter;

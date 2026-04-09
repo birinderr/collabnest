@@ -1,4 +1,4 @@
-package com.collabflow.backend.security;
+package com.collabnest.backend.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

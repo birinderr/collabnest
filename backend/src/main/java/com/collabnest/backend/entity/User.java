@@ -1,10 +1,11 @@
-package com.collabflow.backend.entity;
+package com.collabnest.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.collabnest.backend.enums.Role;
 
 import java.time.LocalDateTime;
 
@@ -33,7 +34,7 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -41,7 +42,4 @@ public class User {
         this.createdAt = LocalDateTime.now();
     }
 
-    public enum Role {
-        USER, ADMIN
-    }
 }
