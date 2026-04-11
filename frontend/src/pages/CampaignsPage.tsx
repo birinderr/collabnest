@@ -232,7 +232,9 @@ const fetchCampaigns = useCallback(async () => {
                     style={{
                       borderTop: idx === 0 ? 'none' : '1px solid var(--border)',
                       transition: 'background 0.15s',
+                      cursor: 'pointer',
                     }}
+                    onClick={() => navigate(`/campaigns/${c.id}`)}
                     onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-elevated)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                   >
@@ -255,7 +257,10 @@ const fetchCampaigns = useCallback(async () => {
                     <td style={styles.td}>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button
-                          onClick={() => setDeleteId(c.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteId(c.id);
+                          }}
                           className="cn-btn-danger"
                           style={{ padding: '6px 10px', fontSize: '12px' }}
                         >

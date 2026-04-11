@@ -253,7 +253,7 @@ useEffect(() => {
                       ...styles.tr,
                       borderTop: idx === 0 ? 'none' : '1px solid var(--border)',
                     }}
-                    onClick={() => navigate('/campaigns')}
+                    onClick={() => navigate(`/campaigns/${c.id}`)}
                   >
                     <td style={styles.td}>
                       <span style={{ fontWeight: 500 }}>{c.campaignName}</span>

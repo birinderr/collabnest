@@ -6,6 +6,8 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import CampaignsPage from './pages/CampaignsPage';
 import CreateCampaignPage from './pages/CreateCampaignPage';
+import CampaignDetailsPage from './pages/CampaignDetailsPage';
+import EditCampaignPage from './pages/EditCampaignPage';
 
 export default function App() {
   return (
@@ -21,6 +23,8 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/campaigns" element={<CampaignsPage />} />
             <Route path="/campaigns/new" element={<CreateCampaignPage />} />
+            <Route path="/campaigns/:id" element={<CampaignDetailsPage />} />
+            <Route path="/campaigns/:id/edit" element={<EditCampaignPage />} />
           </Route>
 
           {/* Fallback */}
