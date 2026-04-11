@@ -58,18 +58,10 @@ export default function CampaignsPage() {
 const fetchCampaigns = useCallback(async () => {
   setLoading(true);
   try {
-    const res = await campaignService.list();
-
-    const campaignList = Array.isArray(res)
-      ? res
-      : res.results || [];
+    const campaignList = await campaignService.list();
 
     setCampaigns(campaignList);
-    setTotalCount(
-      Array.isArray(res)
-        ? res.length
-        : res.count || campaignList.length
-    );
+    setTotalCount(campaignList.length);
   } catch {
     setError('Failed to load campaigns');
     setCampaigns([]);

@@ -83,11 +83,13 @@ export default function DashboardPage() {
 useEffect(() => {
   campaignService
     .list()
-    .then((res) => {
-      setCampaigns(Array.isArray(res) ? res : res.results || []);
+    .then(setCampaigns)
+    .catch((err) => {
+      console.error('Failed to load dashboard campaigns', err)
+      setCampaigns([])
     })
-    .finally(() => setLoading(false));
-}, []);
+    .finally(() => setLoading(false))
+}, [])
 
   const handleLogout = async () => {
     await logout();

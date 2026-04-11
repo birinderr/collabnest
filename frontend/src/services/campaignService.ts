@@ -75,8 +75,8 @@ export interface CreateCampaignData {
 export type UpdateCampaignData = Partial<CreateCampaignData>;
 
 const campaignService = {
-  list: (): Promise<CampaignListResponse> => {
-    return apiClient.get<CampaignListResponse>('/api/campaigns');
+  list: (): Promise<Campaign[]> => {
+    return apiClient.get<Campaign[]>('/api/campaigns');
   },
 
   get: (id: number): Promise<Campaign> => {
