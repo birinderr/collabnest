@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import campaignService, { type Campaign, type CampaignStatus } from '../services/campaignService';
+import BackgroundParticles from '../components/BackgroundParticles';
 
 function StatCard({
   label,
@@ -257,6 +258,7 @@ export default function DashboardPage() {
 
   return (
     <div className="cn-page">
+        <BackgroundParticles />
       <aside className="cn-sidebar">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
           <div className="cn-logo-wrap">

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import BackgroundParticles from '../components/BackgroundParticles';
+
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -28,6 +30,7 @@ export default function LoginPage() {
 
   return (
     <div style={styles.page}>
+        <BackgroundParticles />
       {/* Decorative grid */}
       <div style={styles.gridOverlay} />
 

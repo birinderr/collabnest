@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import campaignService from '../services/campaignService';
 import type { Campaign } from '../services/campaignService';
 import CampaignForm from '../components/CampaignForm';
@@ -34,6 +35,7 @@ export default function EditCampaignPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { showToast } = useToast();
 
   const [campaign, setCampaign]       = useState<Campaign | null>(null);
   const [fetchLoading, setFetchLoading] = useState(true);
@@ -61,9 +63,12 @@ export default function EditCampaignPage() {
         amount: Number(data.amount),
       });
       setSuccess(true);
+      showToast('Campaign updated successfully!', 'success');
       setTimeout(() => navigate(`/campaigns/${id}`), 800);
     } catch (err: unknown) {
-      setSubmitError(err instanceof Error ? err.message : 'Failed to save changes.');
+      const message = err instanceof Error ? err.message : 'Failed to save changes.';
+      setSubmitError(message);
+      showToast(message, 'error');
     } finally {
       setSubmitLoading(false);
     }

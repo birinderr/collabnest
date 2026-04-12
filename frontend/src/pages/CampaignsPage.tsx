@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import campaignService, { type Campaign } from '../services/campaignService';
+import { getDeadlineStatus } from '../utils/deadlineUtils';
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   DRAFT:       { label: 'Draft',       className: 'cn-badge cn-badge-draft' },
@@ -197,31 +198,49 @@ export default function CampaignsPage() {
                 <tr>
                   <th>Campaign</th>
                   <th>Status</th>
+                  <th>Deadline</th>
                   <th>Amount</th>
                   <th>Created</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((c) => (
-                  <tr key={c.id} onClick={() => navigate(`/campaigns/${c.id}`)}>
-                    <td>
-                      <p style={{ fontWeight: 500, marginBottom: '1px' }}>{c.brandName} — {c.campaignName}</p>
-                    </td>
-                    <td><span className={STATUS_CONFIG[c.campaignStatus]?.className || 'cn-badge cn-badge-draft'}>{STATUS_CONFIG[c.campaignStatus]?.label || c.campaignStatus}</span></td>
-                    <td style={{ color: 'var(--text-secondary)' }}>${Number(c.amount).toLocaleString()}</td>
-                    <td style={{ color: 'var(--text-muted)', fontSize: '12.5px' }}>{new Date(c.createdAt).toLocaleDateString()}</td>
-                    <td>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setDeleteId(c.id); }}
-                        className="cn-btn-danger"
-                        style={{ padding: '6px 12px', fontSize: '12px' }}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map((c) => {
+                  const deadlineStatus = getDeadlineStatus(c.deadline);
+                  return (
+                    <tr key={c.id} onClick={() => navigate(`/campaigns/${c.id}`)}>
+                      <td>
+                        <p style={{ fontWeight: 500, marginBottom: '1px' }}>{c.brandName} — {c.campaignName}</p>
+                      </td>
+                      <td><span className={STATUS_CONFIG[c.campaignStatus]?.className || 'cn-badge cn-badge-draft'}>{STATUS_CONFIG[c.campaignStatus]?.label || c.campaignStatus}</span></td>
+                      <td>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          padding: '3px 9px',
+                          borderRadius: '5px',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          fontFamily: 'Syne, sans-serif',
+                          ...deadlineStatus,
+                        }}>
+                          {c.deadline ? new Date(c.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+                        </span>
+                      </td>
+                      <td style={{ color: 'var(--text-secondary)' }}>${Number(c.amount).toLocaleString()}</td>
+                      <td style={{ color: 'var(--text-muted)', fontSize: '12.5px' }}>{new Date(c.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeleteId(c.id); }}
+                          className="cn-btn-danger"
+                          style={{ padding: '6px 12px', fontSize: '12px' }}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}

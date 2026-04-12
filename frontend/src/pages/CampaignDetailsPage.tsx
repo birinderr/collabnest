@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import campaignService from '../services/campaignService';
-import type { Campaign } from '../services/campaignService';
+import type { Campaign, CampaignStatus } from '../services/campaignService';
+import { getDeadlineStatus } from '../utils/deadlineUtils';
 
 const PRIORITY_STYLE: Record<string, React.CSSProperties> = {
   HIGH:   { color: '#f87171', background: 'rgba(248,113,113,0.09)', border: '1px solid rgba(248,113,113,0.2)' },
@@ -14,6 +16,16 @@ const PAYMENT_STYLE: Record<string, React.CSSProperties> = {
   PENDING: { color: '#f0a500', background: 'rgba(240,165,0,0.09)',   border: '1px solid rgba(240,165,0,0.2)' },
   OVERDUE: { color: '#f87171', background: 'rgba(248,113,113,0.09)', border: '1px solid rgba(248,113,113,0.2)' },
 };
+const STATUS_STYLE: Record<string, React.CSSProperties> = {
+  DRAFT:       { color: '#94a3b8', background: 'rgba(148,163,184,0.09)', border: '1px solid rgba(148,163,184,0.2)' },
+  IN_PROGRESS: { color: '#60a5fa', background: 'rgba(96,165,250,0.09)',  border: '1px solid rgba(96,165,250,0.2)'  },
+  SUBMITTED:   { color: '#c084fc', background: 'rgba(192,132,252,0.09)', border: '1px solid rgba(192,132,252,0.2)' },
+  APPROVED:    { color: '#34d399', background: 'rgba(52,211,153,0.09)',  border: '1px solid rgba(52,211,153,0.2)'  },
+  COMPLETED:   { color: '#34d399', background: 'rgba(52,211,153,0.13)',  border: '1px solid rgba(52,211,153,0.3)'  },
+  CANCELLED:   { color: '#f87171', background: 'rgba(248,113,113,0.09)', border: '1px solid rgba(248,113,113,0.2)' },
+};
+
+const STATUS_OPTIONS = ['DRAFT', 'IN_PROGRESS', 'SUBMITTED', 'APPROVED', 'COMPLETED', 'CANCELLED'] as const;
 
 function DetailRow({ label, value }: { label: string; value?: React.ReactNode }) {
   return (
@@ -35,6 +47,76 @@ function Badge({ value, styleMap }: { value: string; styleMap: Record<string, Re
   );
 }
 
+function StatusPill({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: CampaignStatus;
+  disabled?: boolean;
+  onChange: (next: CampaignStatus) => void;
+}) {
+  const s = STATUS_STYLE[value] || {
+    color: 'var(--text-secondary)',
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border)',
+  };
+
+  return (
+    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+      <select
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value as CampaignStatus)}
+        title="Update campaign status"
+        style={{
+          appearance: 'none',
+          WebkitAppearance: 'none',
+          padding: '3px 26px 3px 10px',
+          borderRadius: '5px',
+          fontSize: '11px',
+          fontWeight: 700,
+          fontFamily: 'Syne, sans-serif',
+          letterSpacing: '0.06em',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          outline: 'none',
+          transition: 'opacity 0.15s',
+          opacity: disabled ? 0.6 : 1,
+          ...s,
+        }}
+      >
+        {STATUS_OPTIONS.map((opt) => (
+          <option
+            key={opt}
+            value={opt}
+            style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', fontWeight: 600 }}
+          >
+            {opt.replace('_', ' ')}
+          </option>
+        ))}
+      </select>
+      {disabled ? (
+        /* spinner while saving */
+        <svg
+          width="9" height="9" viewBox="0 0 16 16" fill="none"
+          style={{ position: 'absolute', right: '8px', pointerEvents: 'none', color: s.color as string, animation: 'spin 0.7s linear infinite' }}
+        >
+          <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2.5" strokeDasharray="28" strokeDashoffset="10" strokeLinecap="round" />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </svg>
+      ) : (
+        /* chevron */
+        <svg
+          width="9" height="9" viewBox="0 0 10 10" fill="none"
+          style={{ position: 'absolute', right: '8px', pointerEvents: 'none', color: s.color as string }}
+        >
+          <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
+    </div>
+  );
+}
+
 function SectionHeader({ label }: { label: string }) {
   return (
     <div style={{ paddingBottom: '14px', borderBottom: '1px solid var(--border)', marginBottom: '4px' }}>
@@ -51,12 +133,14 @@ export default function CampaignDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { showToast } = useToast();
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleteModal, setDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -67,8 +151,34 @@ export default function CampaignDetailsPage() {
   const handleDelete = async () => {
     if (!id) return;
     setDeleting(true);
-    try { await campaignService.delete(Number(id)); navigate('/campaigns'); }
-    catch { setError('Failed to delete campaign.'); setDeleting(false); setDeleteModal(false); }
+    try { 
+      await campaignService.delete(Number(id));
+      showToast('Campaign deleted successfully!', 'success');
+      navigate('/campaigns');
+    }
+    catch { 
+      const message = 'Failed to delete campaign.';
+      setError(message);
+      setDeleting(false);
+      setDeleteModal(false);
+      showToast(message, 'error');
+    }
+  };
+
+  const handleStatusChange = async (next: CampaignStatus) => {
+    if (!id || !campaign) return;
+    setStatusUpdating(true);
+    try {
+      await campaignService.update(Number(id), { campaignStatus: next });
+      setCampaign((prev) => prev ? { ...prev, campaignStatus: next } : prev);
+      showToast('Status updated successfully!', 'success');
+    } catch {
+      const message = 'Failed to update status.';
+      setError(message);
+      showToast(message, 'error');
+    } finally {
+      setStatusUpdating(false);
+    }
   };
 
   const handleLogout = async () => { await logout(); navigate('/login'); };
@@ -133,6 +243,12 @@ export default function CampaignDetailsPage() {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
                     <h1 style={{ fontSize: '21px' }}>{campaign.campaignName}</h1>
+                    {/* Inline editable status pill */}
+                    <StatusPill
+                      value={(campaign.campaignStatus as CampaignStatus) || 'DRAFT'}
+                      disabled={statusUpdating}
+                      onChange={handleStatusChange}
+                    />
                     {campaign.priority && <Badge value={campaign.priority as string} styleMap={PRIORITY_STYLE} />}
                     {campaign.paymentStatus && <Badge value={campaign.paymentStatus as string} styleMap={PAYMENT_STYLE} />}
                   </div>
@@ -157,7 +273,29 @@ export default function CampaignDetailsPage() {
                   <DetailRow label="Brand"        value={campaign.brandName} />
                   <DetailRow label="Platform"     value={campaign.platform} />
                   <DetailRow label="Content Type" value={campaign.contentType} />
-                  <DetailRow label="Deadline"     value={campaign.deadline ? new Date(campaign.deadline as string).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : undefined} />
+                  <DetailRow label="Deadline" value={
+                    campaign.deadline ? (
+                      (() => {
+                        const ds = getDeadlineStatus(campaign.deadline);
+                        return (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            padding: '3px 9px',
+                            borderRadius: '5px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            fontFamily: 'Syne, sans-serif',
+                            color: ds.color,
+                            background: ds.background,
+                            border: ds.border,
+                          }}>
+                            {new Date(campaign.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                        );
+                      })()
+                    ) : undefined
+                  } />
                 </div>
               </div>
 
