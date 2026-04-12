@@ -103,7 +103,7 @@ export default function CampaignDetailsPage() {
         </div>
       </aside>
 
-      <main className="cn-main" style={{ maxWidth: '1040px' }}>
+      <main className="cn-main">
         <div>
           <Link to="/campaigns" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', textDecoration: 'none', fontSize: '13px' }}>
             <BackIcon /> Back to Campaigns

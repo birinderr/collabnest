@@ -92,7 +92,7 @@ export default function CreateCampaignPage() {
         </div>
       </aside>
 
-      <main className="cn-main" style={{ maxWidth: '900px' }}>
+      <main className="cn-main">
         {/* Breadcrumb */}
         <div>
           <Link
