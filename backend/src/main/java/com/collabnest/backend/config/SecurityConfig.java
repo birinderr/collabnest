@@ -4,6 +4,7 @@ import com.collabnest.backend.repository.UserRepository;
 import com.collabnest.backend.security.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -30,6 +31,8 @@ public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
     private final UserRepository userRepository;
+    @Value("${FRONTEND_URL}")
+    private String frontendUrl;
 
     @Bean
     public UserDetailsService userDetailsService() {
@@ -69,7 +72,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of(frontendUrl));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
