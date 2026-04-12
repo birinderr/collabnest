@@ -65,6 +65,13 @@ const Toast: React.FC<ToastProps> = ({ id, message, type, onDismiss, duration = 
   const rafRef    = useRef<number>(0);
   const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const clearDismissTimer = () => {
+    if (timerRef.current !== null) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
   // Shrink progress bar and auto-dismiss
   useEffect(() => {
     startRef.current = performance.now();
@@ -86,13 +93,13 @@ const Toast: React.FC<ToastProps> = ({ id, message, type, onDismiss, duration = 
 
     return () => {
       cancelAnimationFrame(rafRef.current);
-      clearTimeout(timerRef.current);
+      clearDismissTimer();
     };
   }, [id, duration, onDismiss]);
 
   const handleDismiss = () => {
     cancelAnimationFrame(rafRef.current);
-    clearTimeout(timerRef.current);
+    clearDismissTimer();
     setExiting(true);
     setTimeout(() => onDismiss(id), 320);
   };

@@ -24,13 +24,15 @@ export default function BackgroundParticles() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const canvasEl = canvas;
+    const ctx = canvasEl.getContext('2d');
     if (!ctx) return;
+    const ctxEl = ctx;
 
     let particles: Particle[] = [];
     let mouse = { x: -9999, y: -9999 };
-    let rafId: number;
-    let resizeTimer: ReturnType<typeof setTimeout>;
+    let rafId = 0;
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
 
     function buildParticles(w: number, h: number) {
       particles = [];
@@ -58,13 +60,13 @@ export default function BackgroundParticles() {
     }
 
     function resize() {
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
-      buildParticles(canvas.width, canvas.height);
+      canvasEl.width = window.innerWidth;
+      canvasEl.height = window.innerHeight;
+      buildParticles(canvasEl.width, canvasEl.height);
     }
 
     function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctxEl.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
       for (const p of particles) {
         const dx   = mouse.x - p.x;
@@ -85,10 +87,10 @@ export default function BackgroundParticles() {
         p.x  += p.vx;
         p.y  += p.vy;
 
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${DOT_COLOR}, ${p.opacity})`;
-        ctx.fill();
+        ctxEl.beginPath();
+        ctxEl.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctxEl.fillStyle = `rgba(${DOT_COLOR}, ${p.opacity})`;
+        ctxEl.fill();
       }
 
       rafId = requestAnimationFrame(draw);
@@ -96,7 +98,12 @@ export default function BackgroundParticles() {
 
     const onMouseMove  = (e: MouseEvent) => { mouse = { x: e.clientX, y: e.clientY }; };
     const onMouseLeave = ()               => { mouse = { x: -9999,    y: -9999    }; };
-    const onResize     = ()               => { clearTimeout(resizeTimer); resizeTimer = setTimeout(resize, 120); };
+    const onResize     = ()               => {
+      if (resizeTimer !== null) {
+        clearTimeout(resizeTimer);
+      }
+      resizeTimer = window.setTimeout(resize, 120);
+    };
 
     resize();
     draw();
@@ -107,7 +114,9 @@ export default function BackgroundParticles() {
 
     return () => {
       cancelAnimationFrame(rafId);
-      clearTimeout(resizeTimer);
+      if (resizeTimer !== null) {
+        clearTimeout(resizeTimer);
+      }
       window.removeEventListener('mousemove',  onMouseMove);
       window.removeEventListener('mouseleave', onMouseLeave);
       window.removeEventListener('resize',     onResize);

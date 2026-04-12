@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import campaignService from '../services/campaignService';
-import type { Campaign } from '../services/campaignService';
+import campaignService, { type Campaign, type CampaignStatus } from '../services/campaignService';
 import { getDeadlineInfo } from '../utils/deadlineUtils';
 
 const PRIORITY_STYLE: Record<string, React.CSSProperties> = {
@@ -24,7 +23,7 @@ const STATUS_STYLE: Record<string, React.CSSProperties> = {
   COMPLETED:   { color: '#34d399', background: 'rgba(52,211,153,0.13)',  border: '1px solid rgba(52,211,153,0.3)'  },
   CANCELLED:   { color: '#f87171', background: 'rgba(248,113,113,0.09)', border: '1px solid rgba(248,113,113,0.2)' },
 };
-const STATUS_OPTIONS = ['DRAFT', 'IN_PROGRESS', 'SUBMITTED', 'APPROVED', 'COMPLETED', 'CANCELLED'] as const;
+const STATUS_OPTIONS: CampaignStatus[] = ['DRAFT', 'IN_PROGRESS', 'SUBMITTED', 'APPROVED', 'COMPLETED', 'CANCELLED'];
 const STATUS_LABELS: Record<string, string> = {
   DRAFT: 'Draft', IN_PROGRESS: 'In Progress', SUBMITTED: 'Submitted',
   APPROVED: 'Approved', COMPLETED: 'Completed', CANCELLED: 'Cancelled',
@@ -50,14 +49,14 @@ function Badge({ value, styleMap }: { value: string; styleMap: Record<string, Re
   );
 }
 
-function StatusPill({ value, disabled, onChange }: { value: string; disabled?: boolean; onChange: (next: string) => void }) {
+function StatusPill({ value, disabled, onChange }: { value: CampaignStatus; disabled?: boolean; onChange: (next: CampaignStatus) => void }) {
   const s = STATUS_STYLE[value] || { color: 'var(--text-secondary)', background: 'var(--bg-elevated)', border: '1px solid var(--border)' };
   return (
     <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-      <select value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} title="Update campaign status"
+      <select value={value} disabled={disabled} onChange={(e) => onChange(e.target.value as CampaignStatus)} title="Update campaign status"
         style={{ appearance: 'none', WebkitAppearance: 'none', padding: '3px 26px 3px 10px', borderRadius: '5px', fontSize: '11px', fontWeight: 700, fontFamily: 'Syne, sans-serif', letterSpacing: '0.06em', cursor: disabled ? 'not-allowed' : 'pointer', outline: 'none', transition: 'opacity 0.15s', opacity: disabled ? 0.6 : 1, ...s }}
       >
-        {STATUS_OPTIONS.map((opt) => (
+        {STATUS_OPTIONS.map((opt: CampaignStatus) => (
           <option key={opt} value={opt} style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', fontWeight: 600 }}>
             {opt.replace('_', ' ')}
           </option>
@@ -149,11 +148,11 @@ export default function CampaignDetailsPage() {
     }
   };
 
-  const handleStatusChange = async (next: string) => {
+  const handleStatusChange = async (next: CampaignStatus) => {
     if (!id || !campaign) return;
     setStatusUpdating(true);
     try {
-      await campaignService.update(Number(id), { campaignStatus: next } as Partial<Campaign>);
+      await campaignService.update(Number(id), { campaignStatus: next });
       setCampaign((prev) => prev ? { ...prev, campaignStatus: next as Campaign['campaignStatus'] } : prev);
       showToast(`Status updated to ${STATUS_LABELS[next] ?? next}`, 'success');
     } catch {
@@ -245,7 +244,7 @@ export default function CampaignDetailsPage() {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
                     <h1 style={{ fontSize: '21px' }}>{campaign.campaignName}</h1>
-                    <StatusPill value={(campaign.campaignStatus as string) || 'DRAFT'} disabled={statusUpdating} onChange={handleStatusChange} />
+                    <StatusPill value={campaign.campaignStatus} disabled={statusUpdating} onChange={handleStatusChange} />
                     {campaign.priority    && <Badge value={campaign.priority    as string} styleMap={PRIORITY_STYLE} />}
                     {campaign.paymentStatus && <Badge value={campaign.paymentStatus as string} styleMap={PAYMENT_STYLE} />}
                   </div>
