@@ -1,4 +1,4 @@
-package com.collabflow.backend;
+package com.collabnest.backend;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
