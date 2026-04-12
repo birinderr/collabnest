@@ -1,53 +1,79 @@
 /**
- * Get deadline urgency status based on days until deadline
- * @param deadline - ISO date string (e.g., "2025-04-20")
- * @returns Object with color, background, border, and label
+ * Returns style + a human-readable label for a deadline string.
+ * Used by CampaignsPage table and CampaignDetailsPage header.
  */
-export function getDeadlineStatus(deadline: string | undefined) {
+export interface DeadlineStatus {
+  color: string;
+  background: string;
+  border: string;
+  label: string;        // e.g. "3 days left", "Overdue", "Apr 17"
+  urgency: 'overdue' | 'critical' | 'warning' | 'ok' | 'none';
+}
+
+export function getDeadlineInfo(deadline?: string | null): DeadlineStatus {
   if (!deadline) {
     return {
-      color: 'var(--text-secondary)',
+      color: 'var(--text-muted)',
       background: 'transparent',
-      label: 'No deadline',
-      urgency: 'none' as const,
+      border: 'transparent',
+      label: '—',
+      urgency: 'none',
     };
   }
 
-  const deadlineDate = new Date(deadline);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  deadlineDate.setHours(0, 0, 0, 0);
+  const now  = new Date();
+  const due  = new Date(deadline);
+  const diff = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-  const daysUntil = Math.ceil((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const formatted = due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-  // Overdue or within 3 days: RED
-  if (daysUntil <= 3) {
+  if (diff < 0) {
     return {
       color: '#f87171',
-      background: 'rgba(248,113,113,0.09)',
-      border: '1px solid rgba(248,113,113,0.2)',
-      label: daysUntil < 0 ? 'Overdue' : `${daysUntil}d left`,
-      urgency: 'critical' as const,
+      background: 'rgba(248,113,113,0.10)',
+      border: '1px solid rgba(248,113,113,0.25)',
+      label: `${Math.abs(diff)}d overdue`,
+      urgency: 'overdue',
     };
   }
-
-  // Within 7 days: AMBER
-  if (daysUntil <= 7) {
+  if (diff === 0) {
+    return {
+      color: '#f87171',
+      background: 'rgba(248,113,113,0.10)',
+      border: '1px solid rgba(248,113,113,0.25)',
+      label: 'Due today',
+      urgency: 'critical',
+    };
+  }
+  if (diff <= 3) {
+    return {
+      color: '#f87171',
+      background: 'rgba(248,113,113,0.08)',
+      border: '1px solid rgba(248,113,113,0.2)',
+      label: `${diff}d left`,
+      urgency: 'critical',
+    };
+  }
+  if (diff <= 7) {
     return {
       color: '#f0a500',
-      background: 'rgba(240,165,0,0.09)',
-      border: '1px solid rgba(240,165,0,0.2)',
-      label: `${daysUntil}d left`,
-      urgency: 'warning' as const,
+      background: 'rgba(240,165,0,0.08)',
+      border: '1px solid rgba(240,165,0,0.22)',
+      label: `${diff}d left`,
+      urgency: 'warning',
     };
   }
-
-  // More than 7 days: GREEN
   return {
-    color: '#34d399',
-    background: 'rgba(52,211,153,0.09)',
-    border: '1px solid rgba(52,211,153,0.2)',
-    label: `${daysUntil}d left`,
-    urgency: 'ok' as const,
+    color: 'var(--text-secondary)',
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border)',
+    label: formatted,
+    urgency: 'ok',
   };
+}
+
+/** Legacy shim — kept so existing imports don't break */
+export function getDeadlineStatus(deadline?: string | null) {
+  const { color, background, border } = getDeadlineInfo(deadline);
+  return { color, background, border };
 }

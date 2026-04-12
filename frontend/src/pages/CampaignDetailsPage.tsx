@@ -3,8 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import campaignService from '../services/campaignService';
-import type { Campaign, CampaignStatus } from '../services/campaignService';
-import { getDeadlineStatus } from '../utils/deadlineUtils';
+import type { Campaign } from '../services/campaignService';
+import { getDeadlineInfo } from '../utils/deadlineUtils';
 
 const PRIORITY_STYLE: Record<string, React.CSSProperties> = {
   HIGH:   { color: '#f87171', background: 'rgba(248,113,113,0.09)', border: '1px solid rgba(248,113,113,0.2)' },
@@ -24,8 +24,11 @@ const STATUS_STYLE: Record<string, React.CSSProperties> = {
   COMPLETED:   { color: '#34d399', background: 'rgba(52,211,153,0.13)',  border: '1px solid rgba(52,211,153,0.3)'  },
   CANCELLED:   { color: '#f87171', background: 'rgba(248,113,113,0.09)', border: '1px solid rgba(248,113,113,0.2)' },
 };
-
 const STATUS_OPTIONS = ['DRAFT', 'IN_PROGRESS', 'SUBMITTED', 'APPROVED', 'COMPLETED', 'CANCELLED'] as const;
+const STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Draft', IN_PROGRESS: 'In Progress', SUBMITTED: 'Submitted',
+  APPROVED: 'Approved', COMPLETED: 'Completed', CANCELLED: 'Cancelled',
+};
 
 function DetailRow({ label, value }: { label: string; value?: React.ReactNode }) {
   return (
@@ -47,69 +50,26 @@ function Badge({ value, styleMap }: { value: string; styleMap: Record<string, Re
   );
 }
 
-function StatusPill({
-  value,
-  disabled,
-  onChange,
-}: {
-  value: CampaignStatus;
-  disabled?: boolean;
-  onChange: (next: CampaignStatus) => void;
-}) {
-  const s = STATUS_STYLE[value] || {
-    color: 'var(--text-secondary)',
-    background: 'var(--bg-elevated)',
-    border: '1px solid var(--border)',
-  };
-
+function StatusPill({ value, disabled, onChange }: { value: string; disabled?: boolean; onChange: (next: string) => void }) {
+  const s = STATUS_STYLE[value] || { color: 'var(--text-secondary)', background: 'var(--bg-elevated)', border: '1px solid var(--border)' };
   return (
     <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-      <select
-        value={value}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value as CampaignStatus)}
-        title="Update campaign status"
-        style={{
-          appearance: 'none',
-          WebkitAppearance: 'none',
-          padding: '3px 26px 3px 10px',
-          borderRadius: '5px',
-          fontSize: '11px',
-          fontWeight: 700,
-          fontFamily: 'Syne, sans-serif',
-          letterSpacing: '0.06em',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          outline: 'none',
-          transition: 'opacity 0.15s',
-          opacity: disabled ? 0.6 : 1,
-          ...s,
-        }}
+      <select value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} title="Update campaign status"
+        style={{ appearance: 'none', WebkitAppearance: 'none', padding: '3px 26px 3px 10px', borderRadius: '5px', fontSize: '11px', fontWeight: 700, fontFamily: 'Syne, sans-serif', letterSpacing: '0.06em', cursor: disabled ? 'not-allowed' : 'pointer', outline: 'none', transition: 'opacity 0.15s', opacity: disabled ? 0.6 : 1, ...s }}
       >
         {STATUS_OPTIONS.map((opt) => (
-          <option
-            key={opt}
-            value={opt}
-            style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', fontWeight: 600 }}
-          >
+          <option key={opt} value={opt} style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', fontWeight: 600 }}>
             {opt.replace('_', ' ')}
           </option>
         ))}
       </select>
       {disabled ? (
-        /* spinner while saving */
-        <svg
-          width="9" height="9" viewBox="0 0 16 16" fill="none"
-          style={{ position: 'absolute', right: '8px', pointerEvents: 'none', color: s.color as string, animation: 'spin 0.7s linear infinite' }}
-        >
+        <svg width="9" height="9" viewBox="0 0 16 16" fill="none" style={{ position: 'absolute', right: '8px', pointerEvents: 'none', color: s.color as string, animation: 'spin 0.7s linear infinite' }}>
           <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2.5" strokeDasharray="28" strokeDashoffset="10" strokeLinecap="round" />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </svg>
       ) : (
-        /* chevron */
-        <svg
-          width="9" height="9" viewBox="0 0 10 10" fill="none"
-          style={{ position: 'absolute', right: '8px', pointerEvents: 'none', color: s.color as string }}
-        >
+        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" style={{ position: 'absolute', right: '8px', pointerEvents: 'none', color: s.color as string }}>
           <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )}
@@ -129,53 +89,76 @@ function SideLink({ href, label, icon, active }: { href: string; label: string; 
   return <Link to={href} className={`cn-nav-link${active ? ' active' : ''}`}>{icon} {label}</Link>;
 }
 
+/** Deadline detail row with urgency colouring */
+function DeadlineRow({ deadline }: { deadline?: string | null }) {
+  if (!deadline) return <DetailRow label="Deadline" />;
+  const dl = getDeadlineInfo(deadline);
+  const formatted = new Date(deadline).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+      <p style={{ fontSize: '10.5px', fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'Syne, sans-serif' }}>Deadline</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{formatted}</span>
+        {dl.urgency !== 'ok' && dl.urgency !== 'none' && (
+          <span style={{ fontSize: '11px', fontWeight: 700, fontFamily: 'Syne, sans-serif', padding: '2px 8px', borderRadius: '4px', color: dl.color, background: dl.background, border: dl.border }}>
+            {dl.urgency === 'overdue' ? '⚠ ' : ''}{dl.label}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function CampaignDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { showToast } = useToast();
 
-  const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [campaign, setCampaign]       = useState<Campaign | null>(null);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState('');
   const [deleteModal, setDeleteModal] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [deleting, setDeleting]       = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
-    campaignService.get(Number(id)).then(setCampaign).catch(() => setError('Campaign not found or failed to load.')).finally(() => setLoading(false));
+    campaignService.get(Number(id))
+      .then((c) => {
+        setCampaign(c);
+        document.title = `${c.campaignName} · CollabNest`;
+      })
+      .catch(() => setError('Campaign not found or failed to load.'))
+      .finally(() => setLoading(false));
+    return () => { document.title = 'CollabNest'; };
   }, [id]);
 
   const handleDelete = async () => {
     if (!id) return;
     setDeleting(true);
-    try { 
+    try {
       await campaignService.delete(Number(id));
-      showToast('Campaign deleted successfully!', 'success');
+      showToast('Campaign deleted', 'success');
       navigate('/campaigns');
-    }
-    catch { 
-      const message = 'Failed to delete campaign.';
-      setError(message);
+    } catch {
+      setError('Failed to delete campaign.');
       setDeleting(false);
       setDeleteModal(false);
-      showToast(message, 'error');
     }
   };
 
-  const handleStatusChange = async (next: CampaignStatus) => {
+  const handleStatusChange = async (next: string) => {
     if (!id || !campaign) return;
     setStatusUpdating(true);
     try {
-      await campaignService.update(Number(id), { campaignStatus: next });
-      setCampaign((prev) => prev ? { ...prev, campaignStatus: next } : prev);
-      showToast('Status updated successfully!', 'success');
+      await campaignService.update(Number(id), { campaignStatus: next } as Partial<Campaign>);
+      setCampaign((prev) => prev ? { ...prev, campaignStatus: next as Campaign['campaignStatus'] } : prev);
+      showToast(`Status updated to ${STATUS_LABELS[next] ?? next}`, 'success');
     } catch {
-      const message = 'Failed to update status.';
-      setError(message);
-      showToast(message, 'error');
+      setError('Failed to update status.');
+      showToast('Failed to update status', 'error');
     } finally {
       setStatusUpdating(false);
     }
@@ -199,8 +182,8 @@ export default function CampaignDetailsPage() {
             <span className="cn-logo-text">CollabNest</span>
           </div>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-            <SideLink href="/dashboard" label="Dashboard" icon={<DashIcon />} />
-            <SideLink href="/campaigns" label="Campaigns" icon={<CampaignIcon />} active />
+            <SideLink href="/dashboard"     label="Dashboard"    icon={<DashIcon />} />
+            <SideLink href="/campaigns"     label="Campaigns"    icon={<CampaignIcon />} active />
             <SideLink href="/campaigns/new" label="New Campaign" icon={<PlusIcon />} />
           </nav>
         </div>
@@ -222,7 +205,26 @@ export default function CampaignDetailsPage() {
 
         {loading && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {[140, 200, 160].map((h, i) => <div key={i} className="cn-card skeleton" style={{ height: `${h}px` }} />)}
+            {/* Shape-accurate detail page skeletons */}
+            <div className="cn-card" style={{ padding: '26px 30px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <div className="skeleton" style={{ height: '24px', width: '180px', borderRadius: '6px' }} />
+                    <div className="skeleton" style={{ height: '22px', width: '80px', borderRadius: '5px' }} />
+                    <div className="skeleton" style={{ height: '22px', width: '70px', borderRadius: '5px' }} />
+                  </div>
+                  <div className="skeleton" style={{ height: '13px', width: '220px', borderRadius: '4px' }} />
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <div className="skeleton" style={{ height: '36px', width: '72px', borderRadius: '9px' }} />
+                  <div className="skeleton" style={{ height: '36px', width: '80px', borderRadius: '9px' }} />
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              {[180, 140, 120, 100].map((h, i) => <div key={i} className="cn-card skeleton" style={{ height: `${h}px` }} />)}
+            </div>
           </div>
         )}
 
@@ -243,13 +245,8 @@ export default function CampaignDetailsPage() {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
                     <h1 style={{ fontSize: '21px' }}>{campaign.campaignName}</h1>
-                    {/* Inline editable status pill */}
-                    <StatusPill
-                      value={(campaign.campaignStatus as CampaignStatus) || 'DRAFT'}
-                      disabled={statusUpdating}
-                      onChange={handleStatusChange}
-                    />
-                    {campaign.priority && <Badge value={campaign.priority as string} styleMap={PRIORITY_STYLE} />}
+                    <StatusPill value={(campaign.campaignStatus as string) || 'DRAFT'} disabled={statusUpdating} onChange={handleStatusChange} />
+                    {campaign.priority    && <Badge value={campaign.priority    as string} styleMap={PRIORITY_STYLE} />}
                     {campaign.paymentStatus && <Badge value={campaign.paymentStatus as string} styleMap={PAYMENT_STYLE} />}
                   </div>
                   <p style={{ color: 'var(--text-muted)', fontSize: '13.5px' }}>
@@ -273,29 +270,7 @@ export default function CampaignDetailsPage() {
                   <DetailRow label="Brand"        value={campaign.brandName} />
                   <DetailRow label="Platform"     value={campaign.platform} />
                   <DetailRow label="Content Type" value={campaign.contentType} />
-                  <DetailRow label="Deadline" value={
-                    campaign.deadline ? (
-                      (() => {
-                        const ds = getDeadlineStatus(campaign.deadline);
-                        return (
-                          <span style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            padding: '3px 9px',
-                            borderRadius: '5px',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            fontFamily: 'Syne, sans-serif',
-                            color: ds.color,
-                            background: ds.background,
-                            border: ds.border,
-                          }}>
-                            {new Date(campaign.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          </span>
-                        );
-                      })()
-                    ) : undefined
-                  } />
+                  <DeadlineRow deadline={campaign.deadline as string} />
                 </div>
               </div>
 
