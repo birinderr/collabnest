@@ -26,7 +26,7 @@ async function request<T>(
     ...rest,
   });
 
-  if (response.status === 401) {
+  if (response.status === 401|| response.status === 403) {
     clearTokens();
     window.dispatchEvent(new Event('auth:logout'));
     throw new ApiError(response.status, 'Unauthorized');
