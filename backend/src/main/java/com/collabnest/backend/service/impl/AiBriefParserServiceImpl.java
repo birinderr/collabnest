@@ -12,8 +12,12 @@ import java.util.List;
 @Service
 public class AiBriefParserServiceImpl implements AiBriefParserService {
 
-    @Override
-    public List<ParsedCampaignDto> parseBrief(String text) {
+@Override
+public List<ParsedCampaignDto> parseBrief(String text) {
+    return parseWithRules(text);
+}
+
+    private List<ParsedCampaignDto> parseWithRules(String text) {
         List<ParsedCampaignDto> campaigns = new ArrayList<>();
 
         String[] lines = text.split("\\n");
@@ -41,7 +45,13 @@ public class AiBriefParserServiceImpl implements AiBriefParserService {
 
     private String extractBrand(String line) {
         String[] parts = line.split("-");
-        return parts.length > 0 ? parts[0].trim() : "Unknown Brand";
+
+        if (parts.length > 0 && !parts[0].trim().isEmpty()) {
+            return parts[0].trim();
+        }
+
+        // fallback
+        return "Unknown Brand";
     }
 
     private String extractCampaignName(String line) {
@@ -60,7 +70,7 @@ public class AiBriefParserServiceImpl implements AiBriefParserService {
             return "YouTube";
         }
 
-        if (lower.contains("twitter") || lower.contains("x ")) {
+        if (lower.contains("twitter") || lower.contains(" x")) {
             return "X";
         }
 
@@ -108,11 +118,21 @@ public class AiBriefParserServiceImpl implements AiBriefParserService {
     }
 
     private Double extractAmount(String line) {
-        Pattern pattern = Pattern.compile("₹\\s*(\\d+)");
+        String lower = line.toLowerCase();
+
+        // handle 8k, 15k
+        Pattern kPattern = Pattern.compile("(\\d+)\\s*k");
+        Matcher kMatcher = kPattern.matcher(lower);
+        if (kMatcher.find()) {
+            return Double.parseDouble(kMatcher.group(1)) * 1000;
+        }
+
+        // handle ₹ 8000 or 8000
+        Pattern pattern = Pattern.compile("(₹\\s*)?(\\d{3,6})");
         Matcher matcher = pattern.matcher(line);
 
         if (matcher.find()) {
-            return Double.parseDouble(matcher.group(1));
+            return Double.parseDouble(matcher.group(2));
         }
 
         return 0.0;
