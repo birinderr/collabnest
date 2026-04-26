@@ -2,17 +2,24 @@ package com.collabnest.backend.service;
 
 import com.collabnest.backend.dto.CreateCampaignRequest;
 import com.collabnest.backend.dto.UpdateCampaignRequest;
+import com.collabnest.backend.dto.ParsedCampaignDto;
 import com.collabnest.backend.entity.Campaign;
 import com.collabnest.backend.entity.User;
 import com.collabnest.backend.enums.Role;
+import com.collabnest.backend.enums.Platform;
+import com.collabnest.backend.enums.ContentType;
 import com.collabnest.backend.exception.AppException;
 import com.collabnest.backend.repository.CampaignRepository;
 import com.collabnest.backend.repository.UserRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
@@ -172,5 +179,55 @@ public class CampaignService {
         }
 
         campaignRepository.delete(campaign);
+    }
+
+    public List<Campaign> createFromParsed(List<ParsedCampaignDto> parsed, User user) {
+
+        List<Campaign> campaigns = new ArrayList<>();
+
+        for (ParsedCampaignDto dto : parsed) {
+
+            Campaign campaign = Campaign.builder()
+                    .brandName(dto.getBrandName())
+                    .campaignName(dto.getCampaignName())
+                    .platform(mapPlatform(dto.getPlatform()))
+                    .contentType(mapContentType(dto.getContentType()))
+                    .deadline(dto.getDeadline() != null ? LocalDate.parse(dto.getDeadline()) : null)
+                    .amount(BigDecimal.valueOf(dto.getAmount()))
+                    .notes(dto.getNotes())
+                    .creator(user)
+                    .build();
+
+            campaigns.add(campaign);
+        }
+
+        return campaignRepository.saveAll(campaigns);
+    }
+
+    private Platform mapPlatform(String platform) {
+        try {
+            return Platform.valueOf(platform.toUpperCase());
+        } catch (Exception e) {
+            return Platform.INSTAGRAM;
+        }
+    }
+
+    private ContentType mapContentType(String contentType) {
+        try {
+            return ContentType.valueOf(contentType.toUpperCase());
+        } catch (Exception e) {
+            return ContentType.POST;
+        }
+    }
+
+    public List<Campaign> createBulkCampaigns(List<CreateCampaignRequest> requests, String email) {
+
+        List<Campaign> saved = new ArrayList<>();
+
+        for (CreateCampaignRequest request : requests) {
+            saved.add(createCampaign(request, email));
+        }
+
+        return saved;
     }
 }
