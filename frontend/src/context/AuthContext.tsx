@@ -3,6 +3,8 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useCallback,
+  useMemo,
 } from 'react';
 import authService from '../services/authService';
 import type { User, LoginCredentials, RegisterData } from '../services/authService';
@@ -47,32 +49,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
     return () => window.removeEventListener('auth:logout', handleLogout);
   }, []);
 
-  const login = async (credentials: LoginCredentials) => {
+  const login = useCallback(async (credentials: LoginCredentials) => {
     const data = await authService.login(credentials);
     setUser({ name: data.name, email: data.email, role: data.role });
-  };
+  }, []);
 
-  const register = async (data: RegisterData) => {
+  const register = useCallback(async (data: RegisterData) => {
     const response = await authService.register(data);
     setUser({ name: response.name, email: response.email, role: response.role });
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await authService.logout();
     setUser(null);
-  };
+  }, []);
+
+  const value = useMemo(() => ({
+    user,
+    isAuthenticated: !!user,
+    isLoading,
+    login,
+    register,
+    logout,
+  }), [user, isLoading, login, register, logout]);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        isLoading,
-        login,
-        register,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

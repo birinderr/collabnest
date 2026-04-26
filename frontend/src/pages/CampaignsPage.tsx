@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -260,8 +260,11 @@ export default function CampaignsPage() {
   const [error, setError]               = useState('');
   const [view, setView]                 = useState<'table' | 'kanban'>('table');
   const PAGE_SIZE = 10;
+  const hasFetched = useRef(false);
 
   const fetchCampaigns = useCallback(async () => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     setLoading(true);
     try {
       const list = await campaignService.list();
