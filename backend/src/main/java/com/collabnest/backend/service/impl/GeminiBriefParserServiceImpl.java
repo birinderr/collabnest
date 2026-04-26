@@ -71,40 +71,93 @@ public class GeminiBriefParserServiceImpl implements AiBriefParserService {
     }
 
     private String buildPrompt(String text) {
-        return """
-            You are a data extraction engine.
+            return """
+                You are a strict JSON data extraction engine for creator brand campaigns.
 
-            Today is April 2026.
+                Today is April 2026.
 
-            Return ONLY valid JSON. No explanation. No extra text.
+                Return ONLY valid JSON.
+                No explanation.
+                No markdown.
+                No extra text.
 
-            Format strictly:
+                Format strictly:
 
-            {
-            "campaigns": [
                 {
-                "brandName": string,
-                "campaignName": string,
-                "platform": string,
-                "contentType": string,
-                "deadline": string,
-                "amount": number,
-                "notes": string
+                "campaigns": [
+                    {
+                    "brandName": string,
+                    "campaignName": string,
+                    "platform": string,
+                    "contentType": string,
+                    "deadline": string,
+                    "amount": number,
+                    "notes": string
+                    }
+                ]
                 }
-            ]
-            }
 
-            Rules:
-            - campaignName MUST be generated as: "<brandName> Collaboration Campaign"
-            - Convert "IG" → "Instagram"
-            - Convert "stories" → "Story"
-            - Convert "8k" → 8000
-            - Resolve "next Friday" relative to April 2026
-            - deadline must be in YYYY-MM-DD format (year MUST be 2026 unless specified)
-            - Do NOT return null for campaignName
-            - notes must be original input
+                CRITICAL RULES:
 
-            Input:
+                PLATFORM must be ONLY one of these exact values:
+                INSTAGRAM
+                YOUTUBE
+                LINKEDIN
+                X
+                OTHER
+
+                CONTENT TYPE must be ONLY one of these exact values:
+                REEL
+                POST
+                STORY
+                SHORT
+                VIDEO
+                OTHER
+
+                Never return human-friendly values like:
+                Instagram, Reel, Shorts, YouTube Shorts, Twitter
+
+                Always convert:
+                IG -> INSTAGRAM
+                Instagram -> INSTAGRAM
+                Youtube -> YOUTUBE
+                Twitter -> X
+                Stories -> STORY
+                Reel -> REEL
+                Shorts -> SHORT
+                YouTube Shorts -> SHORT
+                Short-form video -> SHORT
+
+                campaignName must NOT be generic like:
+                "Nike Collaboration Campaign"
+
+                campaignName must be meaningful and descriptive based on the brief.
+                Examples:
+                "Nike Summer Drop Reel"
+                "Adidas Spring Launch Campaign"
+                "Numa YouTube Shorts Campaign"
+
+                If no explicit campaign name exists,
+                generate the best descriptive campaign name from context.
+
+                Convert:
+                8k -> 8000
+
+                Resolve relative dates like:
+                next Friday
+
+                relative to April 2026.
+
+                deadline must be:
+                YYYY-MM-DD
+
+                Year must default to 2026 unless explicitly specified.
+
+                Do not return null for campaignName.
+
+                notes should preserve the important original brief details.
+
+                Input:
         """ + text;
     }
 

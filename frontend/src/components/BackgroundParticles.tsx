@@ -15,7 +15,7 @@ const REPEL_RADIUS   = 110;
 const REPEL_STRENGTH = 5;
 const RETURN_SPEED   = 0.055;
 const DAMPING        = 0.78;
-const DOT_COLOR      = '148, 163, 184'; // slate-400
+const DOT_COLOR      = '210, 220, 235'; // slate-400
 const GRID_SPACING   = 28;              // matches original CSS grid
 
 export default function BackgroundParticles() {
