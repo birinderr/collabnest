@@ -45,7 +45,7 @@ public class GeminiBriefParserServiceImpl implements AiBriefParserService {
         headers.set("Content-Type", "application/json");
 
         Map<String, Object> body = Map.of(
-                "model", "llama-3.3-70b-versatile",
+                "model", "openai/gpt-oss-120b",
                 "messages", List.of(
                         Map.of("role", "user", "content", prompt)
                 ),
